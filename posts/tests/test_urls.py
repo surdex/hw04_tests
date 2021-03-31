@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -26,14 +28,14 @@ class StaticURLTests(TestCase):
             group=cls.group,
         )
         cls.URLs_list_for_guest = [
-            reverse('index'),
-            '/group/test-slug-of-group/',
-            '/test_user/',
+            '/',
+            f'/group/{cls.group.slug}/',
+            f'/{cls.user.username}/',
             f'/test_user/{cls.post.id}/',
         ]
         cls.URLs_list_for_authorized = [
             '/new/',
-            f'/test_user/{cls.post.id}/edit/',
+            f'/{cls.user.username}/{cls.post.id}/edit/',
         ]
 
     def setUp(self):
@@ -50,21 +52,22 @@ class StaticURLTests(TestCase):
         for url in StaticURLTests.URLs_list_for_guest:
             with self.subTest(url=url):
                 response = self.guest_client.get(url)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_URls_exists_at_desired_location_only_for_authorized(self):
         """Страницы доступные только авторизованному автору поста."""
         for url in StaticURLTests.URLs_list_for_authorized:
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_new_and_post_edit_url_redirect_anonymous(self):
-        """Страницы перенаправляющие анониного пользователя."""
+        """Страницы перенаправляющие анонимного пользователя."""
+        login = reverse('login')
         for url in StaticURLTests.URLs_list_for_authorized:
             with self.subTest(url=url):
                 response = self.guest_client.get(url, follow=True)
-                self.assertRedirects(response, '/auth/login/?next=' + url)
+                self.assertRedirects(response, f'{login}?next={url}')
 
     def test_post_edit_url_redirect_authorized_on_post_page(self):
         """Страница post_edit перенаправляет не автора поста."""
@@ -75,18 +78,18 @@ class StaticURLTests(TestCase):
         )
         self.assertRedirects(response, f'/test_user/{post_id}/')
 
-    # Этот модуль дублируется в test_views.
-    # Где он должен правильно находиться, тут или в test_views?
-    # def test_urls_uses_correct_template(self):
-    #    templates_url_names = {
-    #        'index.html': '/',
-    #        'group.html': reverse(
-    #            'group',
-    #            kwargs={'slug': 'test-slug-of-group'}
-    #        ),
-    #        'new_post.html': '/new/',
-    #    }
-    #    for template, url in templates_url_names.items():
-    #        with self.subTest(url=url):
-    #            response = self.authorized_client.get(url)
-    #            self.assertTemplateUsed(response, template)
+    def test_urls_uses_correct_template(self):
+        """URL-адреса использует соответствующий шаблон."""
+        templates_url_names = {
+            '/': 'index.html',
+            f'/group/{StaticURLTests.group.slug}/': 'group.html',
+            f'/{StaticURLTests.user.username}/{StaticURLTests.post.id}/edit/':
+                'new_post.html',
+            '/new/': 'new_post.html',
+            f'/test_user/{StaticURLTests.post.id}/': 'post.html',
+            f'/{StaticURLTests.user.username}/': 'profile.html'
+        }
+        for url, template in templates_url_names.items():
+            with self.subTest(url=url):
+                response = self.authorized_client.get(url)
+                self.assertTemplateUsed(response, template)

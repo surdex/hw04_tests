@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-# from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import PostForm
@@ -37,7 +36,6 @@ def new_post(request):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     post_list = author.posts.all()
-    # Предполагаю следующая строчка неправильна. Нужно использовать annotate()?
     count_posts = author.posts.count()
     page = Paginator(post_list, 10).get_page(request.GET.get('page'))
     return render(request, 'profile.html', {
@@ -49,8 +47,8 @@ def profile(request, username):
 
 
 def post_view(request, username, post_id):
-    author = get_object_or_404(User, username=username)
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(Post, pk=post_id, author__username=username)
+    author = post.author
     count_posts = author.posts.count()
     return render(request, 'post.html', {
         'author': author,
@@ -62,8 +60,8 @@ def post_view(request, username, post_id):
 
 @login_required
 def post_edit(request, username, post_id):
-    author = get_object_or_404(User, username=username)
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(Post, pk=post_id, author__username=username)
+    author = post.author
     if author != request.user:
         return redirect('post', username=author.username, post_id=post.id)
     form = PostForm(request.POST or None, instance=post)

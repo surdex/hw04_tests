@@ -48,7 +48,7 @@ class PostFormTest(TestCase):
         """verbose_name в полях совпадает с ожидаемым."""
         form = PostFormTest.form
         field_verboses = {
-            'text': 'Текст Вашего поста',
+            'text': 'Текст публикации',
             'group': 'Группа',
         }
         for value, expected in field_verboses.items():

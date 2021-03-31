@@ -63,36 +63,34 @@ class PostPagesTests(TestCase):
         templates_page_names = PostPagesTests.templates_page_names
         for template, reverse_name in templates_page_names.items():
             with self.subTest(template=template):
-                if template == 'new_post.html':
-                    for rev_name in reverse_name.values():
-                        response = self.authorized_client.get(rev_name)
-                        self.assertTemplateUsed(response, template)
-                else:
+                if template != 'new_post.html':
                     response = self.authorized_client.get(reverse_name)
                     self.assertTemplateUsed(response, template)
+
+    def test_pages_post_correct_template_new_post(self):
+        """URL-адреса использует шаблон new_post.html."""
+        pages_name = PostPagesTests.templates_page_names['new_post.html']
+        for reverse_name in pages_name.values():
+            with self.subTest(reverse_name=reverse_name):
+                response = self.authorized_client.get(reverse_name)
+                self.assertTemplateUsed(response, 'new_post.html')
 
     def test_index_pages_show_correct_context(self):
         """Шаблон index сформированы с правильным контекстом."""
         response = self.guest_client.get(reverse('index'))
+        self.assertIn('page', response.context)
         first_object = response.context['page'][0]
         self.assertEqual(first_object.text, PostPagesTests.post.text)
         self.assertEqual(first_object.pub_date, PostPagesTests.post.pub_date)
         self.assertEqual(first_object.author, PostPagesTests.post.author)
-        for ten_posts in range(10):
-            Post.objects.create(
-                text='Infinity text',
-                author=PostPagesTests.user,
-                group=PostPagesTests.group_with_post
-            )
-        response = self.guest_client.get(reverse('index'))
-        count_objects = len(response.context['page'])
-        self.assertEqual(count_objects, 10)
 
     def test_group_with_post_pages_show_correct_context(self):
         """Шаблон group сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             self.templates_page_names['group.html']
         )
+        self.assertIn('page', response.context)
+        self.assertIn('group', response.context)
         first_object = response.context['page'][0]
         self.assertEqual(first_object.text, PostPagesTests.post.text)
         self.assertEqual(first_object.pub_date, PostPagesTests.post.pub_date)
@@ -116,6 +114,7 @@ class PostPagesTests(TestCase):
     def test_new_post_page_show_correct_context(self):
         """Шаблон new post сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('new_post'))
+        self.assertIn('form', response.context)
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
@@ -131,6 +130,9 @@ class PostPagesTests(TestCase):
         response = self.authorized_client.get(
             templates_page_names['profile.html']
         )
+        self.assertIn('page', response.context)
+        self.assertIn('author', response.context)
+        self.assertIn('count_posts', response.context)
         page_object = response.context['page'][0]
         self.assertEqual(page_object.text, PostPagesTests.post.text)
         self.assertEqual(page_object.pub_date, PostPagesTests.post.pub_date)
@@ -145,11 +147,14 @@ class PostPagesTests(TestCase):
         self.assertEqual(count_posts, PostPagesTests.user.posts.count())
 
     def test_post_page_show_correct_context(self):
-        """Шаблон profile сформирован с правильным контекстом."""
+        """Шаблон post сформирован с правильным контекстом."""
         templates_page_names = PostPagesTests.templates_page_names
         response = self.authorized_client.get(
             templates_page_names['post.html']
         )
+        self.assertIn('post', response.context)
+        self.assertIn('author', response.context)
+        self.assertIn('count_posts', response.context)
         page_object = response.context['post']
         self.assertEqual(page_object.text, PostPagesTests.post.text)
         self.assertEqual(page_object.pub_date, PostPagesTests.post.pub_date)
@@ -163,7 +168,26 @@ class PostPagesTests(TestCase):
         count_posts = response.context['count_posts']
         self.assertEqual(count_posts, PostPagesTests.user.posts.count())
 
+    def test_paginator_show_correct_context(self):
+        """Проверка правильности контекста paginator на всех страницах"""
+        for ten_posts in range(10):
+            Post.objects.create(
+                text='Infinity text',
+                author=PostPagesTests.user,
+                group=PostPagesTests.group_with_post
+            )
+        templates_page_names = PostPagesTests.templates_page_names
+        pages_with_paginator = ['index.html', 'group.html', 'profile.html']
+        for page_names in pages_with_paginator:
+            with self.subTest(page_names=page_names):
+                response = self.guest_client.get(
+                    templates_page_names[page_names]
+                )
+                count_objects = len(response.context['page'])
+                self.assertEqual(count_objects, 10)
+
     def test_post_edit_page_show_correct_context(self):
+        """Отредактированные посты сохранены в БД."""
         template_page = PostPagesTests.templates_page_names['new_post.html']
         response = self.authorized_client.get(template_page['edit_post'])
         form_fields = {
