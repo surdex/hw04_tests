@@ -44,35 +44,6 @@ class PostFormTest(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(PostFormTest.user)
 
-    def test_verbose_name(self):
-        """verbose_name в полях совпадает с ожидаемым."""
-        form = PostFormTest.form
-        field_verboses = {
-            'text': 'Текст публикации',
-            'group': 'Группа',
-        }
-        for value, expected in field_verboses.items():
-            with self.subTest(value=value):
-                self.assertEqual(
-                    form.fields[value].label, expected,
-                    f'verbose_name не совпадает в поле {value}'
-                )
-
-    def test_help_text(self):
-        """help_text в полях совпадает с ожидаемым."""
-        form = PostFormTest.form
-        field_help_text = {
-            'text': 'Здесь Вы можете рассказать, что у Вас нового.',
-            'group': 'Выберите группу, которая лучше всего '
-                     'подходит к теме Вашего поста.',
-        }
-        for value, expected in field_help_text.items():
-            with self.subTest(value=value):
-                self.assertEqual(
-                    form.fields[value].help_text, expected,
-                    f'help_text не совпадает в поле {value}'
-                )
-
     def test_create_post(self):
         """Валидная форма создаёт запись в Post"""
         posts_count = Post.objects.count()
@@ -80,11 +51,13 @@ class PostFormTest(TestCase):
             'text': 'New test text',
             'group': PostFormTest.group.id,
         }
+
         response = self.authorized_client.post(
             reverse('new_post'),
             data=post_data,
             follow=True,
         )
+
         self.assertRedirects(response, reverse('index'))
         self.assertEqual(Post.objects.count(), posts_count + 1)
 
@@ -99,11 +72,13 @@ class PostFormTest(TestCase):
             'username': PostFormTest.user.username,
             'post_id': post_id,
         }
+
         response = self.authorized_client.post(
             reverse('post_edit', kwargs=kwargs_post),
             data=post_data,
             follow=True,
         )
+
         self.assertRedirects(response,
                              reverse('post', kwargs=kwargs_post))
         self.assertEqual(Post.objects.get(id=post_id).text, post_data['text'])
