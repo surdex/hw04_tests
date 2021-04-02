@@ -90,7 +90,7 @@ class PostPagesTests(TestCase):
         page_object = response.context['page'][0]
 
         self.assertIn('page', response.context)
-        PostPagesTests.context_page_assertions(self, page_object)
+        self.context_page_assertions(page_object)
 
     def test_group_with_post_pages_show_correct_context(self):
         """Шаблон group сформирован с правильным контекстом."""
@@ -104,7 +104,7 @@ class PostPagesTests(TestCase):
 
         self.assertIn('page', response.context)
         self.assertIn('group', response.context)
-        PostPagesTests.context_page_assertions(self, page_object)
+        self.context_page_assertions(page_object)
         self.assertEqual(response_group.title, group.title)
         self.assertEqual(response_group.slug, group.slug)
         self.assertEqual(response_group.description, group.description)
@@ -150,7 +150,7 @@ class PostPagesTests(TestCase):
         self.assertIn('page', response.context)
         self.assertIn('author', response.context)
         self.assertIn('count_posts', response.context)
-        PostPagesTests.context_page_assertions(self, page_object)
+        self.context_page_assertions(page_object)
         self.assertEqual(author_object.get_full_name(),
                          PostPagesTests.user.get_full_name())
         self.assertEqual(author_object.get_username(),
@@ -171,7 +171,7 @@ class PostPagesTests(TestCase):
         self.assertIn('post', response.context)
         self.assertIn('author', response.context)
         self.assertIn('count_posts', response.context)
-        PostPagesTests.context_page_assertions(self, page_object)
+        self.context_page_assertions(page_object)
         self.assertEqual(author_object.get_full_name(),
                          PostPagesTests.user.get_full_name())
         self.assertEqual(author_object.get_username(),
@@ -223,4 +223,4 @@ class PostPagesTests(TestCase):
                 form_field = response.context['form'].fields[value]
 
                 self.assertIsInstance(form_field, expected)
-        PostPagesTests.context_page_assertions(self, page_object)
+        self.context_page_assertions(page_object)
